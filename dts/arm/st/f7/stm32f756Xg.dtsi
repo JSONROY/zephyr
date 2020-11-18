@@ -14,5 +14,15 @@
 				reg = <0x08000000 DT_SIZE_K(1024)>;
 			};
 		};
-	};
+
+        hash1: hash@50060400 {
+            compatible = "st,stm32-hash";
+            reg = <50060400 0x40084>;
+            interrupts = <80 0>;
+            clock-names = "stmhash";
+            clocks = <&rcc STM32_CLOCK_BUS_AHB2 0x00000020>;
+            status = "disabled";
+            label = "HASH_INSTANCE";
+        };
+    };
 };

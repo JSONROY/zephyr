@@ -95,3 +95,7 @@
 &mac {
 	status = "okay";
 };
+
+&hash1 {
+    status = "okay";
+};

@@ -1,0 +1,19 @@
+# Crypto configuration options
+
+# Copyright (c) 2017 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+#
+# ENABLE_HASH options
+#
+menuconfig ENABLE_HASH
+	bool "STM32 hash processor [EXPERIMENTAL]"
+	
+if ENABLE_HASH
+
+module = ENABLE_HASH
+module-str = enable stm32 hash
+
+source "drivers/hash/Kconfig.stm32"
+
+endif # ENABLE_HASH

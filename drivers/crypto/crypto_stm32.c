@@ -463,6 +463,6 @@ static struct crypto_stm32_config crypto_stm32_dev_config = {
 };
 
 DEVICE_AND_API_INIT(crypto_stm32, DT_INST_LABEL(0),
-		    crypto_stm32_init, &crypto_stm32_dev_data,
-		    &crypto_stm32_dev_config, POST_KERNEL,
-		    CONFIG_CRYPTO_INIT_PRIORITY, (void *)&crypto_enc_funcs);
+                    crypto_stm32_init, &crypto_stm32_dev_data,
+                    &crypto_stm32_dev_config, POST_KERNEL,
+                    CONFIG_CRYPTO_INIT_PRIORITY, (void *)&crypto_enc_funcs);

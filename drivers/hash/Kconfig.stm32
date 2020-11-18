@@ -1,0 +1,51 @@
+# STM32 Hash processor configuration options
+
+# Copyright (c) 2020 Jason Roy <jason.roy1403@hotmail.com>
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig HASH_STM32
+	bool "STM32 Cryptographic Accelerator driver for HASH"
+	depends on SOC_FAMILY_STM32
+	select USE_STM32_HAL_HASH
+	select USE_STM32_HAL_HASH_EX
+	help
+	  Enable STM32 Cryptographic Accelerator driver for HASH
+
+
+if HASH_STM32
+
+config HASH_STM32_INIT_PRIORITY
+	bool "Priority when initializing the STM32 Cryptographic Accelerator driver for HASH"
+	default 91
+	help
+	  Priority when initializing the STM32 Cryptographic Accelerator driver for HASH
+
+choice HASH_STM32_CHOICE
+	prompt "Choose implementation"
+
+config HASH_STM32_DMA
+	bool "STM32 Cryptographic Accelerator driver for HASH using DMA"
+	select DMA
+	select DMA_STM32
+	select USE_STM32_HAL_DMA
+	help
+	  STM32 Cryptographic Accelerator driver for HASH using DMA
+
+config HASH_STM32_INT
+	bool "STM32 Cryptographic Accelerator driver for HASH using INTERRUPTS"
+	depends on HASH_STM32
+	help
+	  STM32 Cryptographic Accelerator driver for HASH using INTERRUPTS
+
+config HASH_STM32_POLLING
+	bool "STM32 Cryptographic Accelerator driver for HASH using polling"
+	depends on HASH_STM32
+	help
+	  STM32 Cryptographic Accelerator driver for HASH using polling
+
+endchoice
+
+endif # HASH_STM32
+
+
+
