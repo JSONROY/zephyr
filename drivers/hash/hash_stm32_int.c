@@ -98,8 +98,6 @@ void hash_something() {
                 DEVICE_GET(hash1_dev),
                 0);
 
-    __HAL_HASH_CLEAR_FLAG(HASH_FLAG_DCIS);
-    __HAL_HASH_CLEAR_FLAG(HASH_FLAG_DINIS);
     irq_enable(HASH_IRQN);
 
     /* Start HASH computation */

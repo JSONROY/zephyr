@@ -17,11 +17,11 @@
 
 #define LOG_LEVEL CONFIG_HASH_LOG_LEVEL
 #include <logging/log.h>
-#include <drivers/dma.h>
 
 LOG_MODULE_REGISTER(hash_stm32);
 
 #define HASH_DEV DT_NODELABEL(hash1)
+#define DMA2_DEV DT_NODELABEL(dma2)
 
 // TODO: Replace by DTS definitions
 #define HASH_IRQN		80
@@ -61,6 +61,7 @@ static void hash_dma_isr(const struct device *dev);
 
 void hash_something() {
     const struct device *hash_dev = device_get_binding(DT_LABEL(HASH_DEV));
+    const struct device *dma2 = device_get_binding(DT_LABEL(DMA2_DEV));
     const struct device *clk = device_get_binding(STM32_CLOCK_CONTROL_NAME);
 //    struct hash_stm32_data *data = HASH_STM32_DATA(hash_dev);
     const struct hash_stm32_config *cfg = HASH_STM32_CFG(hash_dev);
@@ -92,15 +93,20 @@ void hash_something() {
 
     memset(pOutBuffer, 0, 32);
 
-
     printk("Configure\n");
-    hhash.Init.DataType = HASH_CR_DATATYPE_1;
+
+
+    printk("DeInit hash handle\n");
+    status = HAL_HASH_DeInit(&hhash);
+    if (status != HAL_OK) {
+        printk("DeInit Failed %d\n", status);
+    }
 
     // TODO: Replace by DTS definitions
     hashDmaInitTypeDefIn.Channel = DMA_CHANNEL_2;
     hashDmaInitTypeDefIn.Direction = DMA_MEMORY_TO_PERIPH;
-    hashDmaInitTypeDefIn.PeriphInc = DMA_PINC_ENABLE;
-    hashDmaInitTypeDefIn.MemInc = DMA_PINC_DISABLE;
+    hashDmaInitTypeDefIn.PeriphInc = DMA_PINC_DISABLE;
+    hashDmaInitTypeDefIn.MemInc = DMA_MINC_ENABLE;
     hashDmaInitTypeDefIn.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     hashDmaInitTypeDefIn.MemDataAlignment = DMA_PDATAALIGN_BYTE;
     hashDmaInitTypeDefIn.Mode = DMA_NORMAL;
@@ -109,36 +115,27 @@ void hash_something() {
     hashDmaInitTypeDefIn.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
     hashDmaInitTypeDefIn.MemBurst = DMA_MBURST_INC4;
     hashDmaInitTypeDefIn.PeriphBurst = DMA_MBURST_INC4;
+
     hashDmaHandleTypeDefIn.Init = hashDmaInitTypeDefIn;
     hashDmaHandleTypeDefIn.Instance = DMA2_Stream7;
-    hashDmaHandleTypeDefIn.StreamBaseAddress = DMA2_Stream7_BASE;
-    hhash.hdmain = &hashDmaHandleTypeDefIn;
 
-//    hashDmaHandleTypeDefIn.Instance = DMA2_BASE;
-
-    //hashDmaHandleTypeDefIn.Init
-//            hashDmaHandleTypeDefout
-
-    printk("DeInit\n");
-    status = HAL_HASH_DeInit(&hhash);
-    if (status != HAL_OK) {
-        printk("DeInit Failed %d\n", status);
-    }
-
-    printk("Init hash handle\n");
-    status = HAL_HASH_Init(&hhash);
-    if (status != HAL_OK) {
-        printk("Init Failed %d\n", status);
-    }
-
-    printk("DeInit\n");
+    printk("DeInit dma handle\n");
     status = HAL_DMA_DeInit(&hashDmaHandleTypeDefIn);
     if (status != HAL_OK) {
         printk("DeInit Failed %d\n", status);
     }
 
+    hhash.Init.DataType = HASH_CR_DATATYPE_1;
+    hhash.hdmain = &hashDmaHandleTypeDefIn;
+
     printk("Init dma hash handle\n");
     status = HAL_DMA_Init(&hashDmaHandleTypeDefIn);
+    if (status != HAL_OK) {
+        printk("Init Failed %d\n", status);
+    }
+
+    printk("Init hash handle\n");
+    status = HAL_HASH_Init(&hhash);
     if (status != HAL_OK) {
         printk("Init Failed %d\n", status);
     }
@@ -150,8 +147,6 @@ void hash_something() {
                 DEVICE_GET(hash1_dev),
                 0);
 
-    __HAL_HASH_CLEAR_FLAG(HASH_FLAG_DCIS);
-    __HAL_HASH_CLEAR_FLAG(HASH_FLAG_DINIS);
     irq_enable(HASH_IRQN);
 
     IRQ_CONNECT(HASH_DMA2_STREAM_IRQ,
@@ -183,9 +178,16 @@ static void hash_isr(const struct device *hash) {
         print_array_hex(pOutBuffer, 32);
 
         /* Compare computed digest with expected one */
-        printk("Compare\n");
-        if (memcmp(pOutBuffer, aExpectSHA256Digest, sizeof(aExpectSHA256Digest) / sizeof(aExpectSHA256Digest[0])) != 0) {
-            printk("Compared Failed\n");
+        if(HAL_HASHEx_SHA256_Finish(&hhash, pOutBuffer, 1000) == HAL_OK)
+        {
+            printk("Compare\n");
+            if (memcmp(pOutBuffer, aExpectSHA256Digest, sizeof(aExpectSHA256Digest) / sizeof(aExpectSHA256Digest[0])) != 0) {
+                printk("Compared Failed\n");
+            }
+        }
+        else
+        {
+            printk("Error while getting the HASH from the registers\n");
         }
     }
 }
@@ -197,10 +199,9 @@ static void hash_dma_isr(const struct device *hash) {
 //    if (__HAL_DMA_GET_TC_FLAG_INDEX(&hashDmaHandleTypeDefIn))
     {
         printk("In dma interrupt: computed digest finished\n");
-//        printk("Computed:  ");
         HAL_HASHEx_SHA256_Finish(&hhash, pOutBuffer, 1000);
-//        print_array_hex(pOutBuffer, 32);
-//
+        print_array_hex(pOutBuffer, 32);
+
 //        /* Compare computed digest with expected one */
 //        printk("Compare\n");
 //        if (memcmp(pOutBuffer, aExpectSHA256Digest, sizeof(aExpectSHA256Digest) / sizeof(aExpectSHA256Digest[0])) != 0) {
